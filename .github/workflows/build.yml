@@ -30,11 +30,36 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: App name, icon and status bar color
+      - name: App name and icon
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y imagemagick
           RES=android/app/src/main/res
           sed -i 's|<string name="app_name">.*</string>|<string name="app_name">حساب من</string>|' $RES/values/strings.xml || true
           sed -i 's|<string name="title_activity_main">.*</string>|<string name="title_activity_main">حساب من</string>|' $RES/values/strings.xml || true
+          rm -rf $RES/mipmap-anydpi-v26
+          for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d=${pair%%:*}; s=${pair##*:}
+            mkdir -p $RES/mipmap-$d
+            for n in ic_launcher ic_launcher_round; do
+              if command -v magick >/dev/null 2>&1; then
+                magick icon-512.png -resize ${s}x${s} $RES/mipmap-$d/$n.png
+              else
+                convert icon-512.png -resize ${s}x${s} $RES/mipmap-$d/$n.png
+              fi
+            done
+          done
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hesab-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk          sed -i 's|<string name="title_activity_main">.*</string>|<string name="title_activity_main">حساب من</string>|' $RES/values/strings.xml || true
           sed -i 's|<color name="colorPrimaryDark">.*</color>|<color name="colorPrimaryDark">#0B4F5C</color>|' $RES/values/colors.xml || true
           rm -rf $RES/mipmap-anydpi-v26
           for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
